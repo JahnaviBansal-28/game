@@ -4,12 +4,27 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define HIGHSCORE_FILE "highscore.txt"
+
 int main() {
     srand(time(0));
 
-    int x = 1;              // player position (0 to 2)
-    int step = 0;           // obstacle vertical movement
-    int obstaclePos = rand() % 3;   // 0,1,2 lane
+    int x = 1;                    // player position (0 to 2)
+    int step = 0;                 // obstacle vertical movement (row index)
+    int obstaclePos = rand() % 3; // 0,1,2 lane
+
+    int score = 0;                // current score
+    int highScore = 0;            // best score stored in file
+    FILE *f = NULL;
+
+    // ---- LOAD HIGH SCORE FROM FILE (if it exists) ----
+    f = fopen(HIGHSCORE_FILE, "r");
+    if (f != NULL) {
+        fscanf(f, "%d", &highScore);
+        fclose(f);
+    } else {
+        highScore = 0;
+    }
 
     while (1) {
 
@@ -53,9 +68,28 @@ int main() {
         else if (x == 2)
             printf("|        %c |\n", 6);
 
+        // ---- SCORE DISPLAY ----
+        printf("Score: %d    High Score: %d\n", score, highScore);
+
         // ---- COLLISION ----
         if (step == 10 && x == obstaclePos) {
             printf("\nGAME OVER!\n");
+            printf("Your Score: %d\n", score);
+
+            // update high score if needed
+            if (score > highScore) {
+                highScore = score;
+                printf("New High Score!\n");
+
+                f = fopen(HIGHSCORE_FILE, "w");
+                if (f != NULL) {
+                    fprintf(f, "%d", highScore);
+                    fclose(f);
+                }
+            } else {
+                printf("High Score: %d\n", highScore);
+            }
+
             break;
         }
 
@@ -64,10 +98,11 @@ int main() {
         // Move obstacle down
         step++;
 
-        // Reset when reaches bottom
+        // Reset when reaches bottom (no collision) → increase score
         if (step > 10) {
             step = 0;
             obstaclePos = rand() % 3; // new lane
+            score++;                  // successfully dodged one obstacle
         }
     }
 
