@@ -17,7 +17,7 @@ int main() {
     int highScore = 0;            // best score stored in file
     FILE *f = NULL;
 
-    // ---- LOAD HIGH SCORE FROM FILE (if it exists) ----
+    // load highscore from file
     f = fopen(HIGHSCORE_FILE, "r");
     if (f != NULL) {
         fscanf(f, "%d", &highScore);
@@ -76,7 +76,7 @@ int main() {
             printf("\nGAME OVER!\n");
             printf("Your Score: %d\n", score);
 
-            // update high score if needed
+            // update highschore if needed
             if (score > highScore) {
                 highScore = score;
                 printf("New High Score!\n");

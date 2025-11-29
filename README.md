@@ -1,281 +1,193 @@
-# Console Lane-Dodging Game – Code Analysis
+Lane-Dodging Game – My Analysis & Modifications
 
-This repository contains a simple console-based lane-dodging game written in C for Windows.  
-The player controls a character at the bottom of the screen and must avoid incoming obstacles falling from the top in one of three lanes.
+This project is a small C-based console game where you move a player left/right to avoid a falling obstacle. The whole thing runs inside the Windows console, so it mainly relies on clearing and redrawing the screen very quickly to create the illusion of movement.
 
----
+1. Main Idea of the Game
 
-## 1. Overall Game Idea
+The game has three lanes (left, middle, right).
+An obstacle appears at the top in one of these lanes and keeps moving downward every frame.
+The player sits at the bottom and can shift between the three lanes using the left and right arrow keys.
 
-- The game has **3 horizontal lanes**: left, middle, right.
-- A single **obstacle** spawns at the top in a random lane and moves **down one row each frame**.
-- The **player** stays at the bottom and can move left or right using the **arrow keys**.
-- If the obstacle reaches the bottom **in the same lane** as the player, the game ends with **"GAME OVER!"**.
+If the obstacle reaches the bottom and both share the same lane → the game ends.
 
-The game runs in an infinite loop until a collision happens.
+The loop keeps running until this collision happens.
 
----
+2. Libraries Used & Platform
 
-## 2. Dependencies and Platform
+The program includes:
 
-The program uses:
-
-```c
 #include <stdio.h>
 #include <conio.h>
 #include <windows.h>
 #include <stdlib.h>
 #include <time.h>
 
-Important Variables
-int x = 1;              // Player position: 0 = left, 1 = middle, 2 = right
-int step = 0;           // Obstacle's vertical position (row index)
-int obstaclePos = rand() % 3;   // Lane of the obstacle: 0, 1, or 2
+
+conio.h and windows.h make it work only on Windows (because of getch(), _kbhit(), Sleep, and system("cls")).
+
+3. Important Variables in the Game
+int x = 1;              // Player lane (0,1,2)
+int step = 0;           // Which row the obstacle is on
+int obstaclePos = rand() % 3;   // Lane of the obstacle
 
 
-x: represents which lane the player is currently in.
+x → where the player is currently standing
 
-step: represents how far down the obstacle has moved (from top to bottom).
+step → how far the obstacle has travelled vertically
 
-obstaclePos: represents in which lane (0, 1, or 2) the obstacle is spawned.
+obstaclePos → randomly chosen lane for the upcoming obstacle
 
-All game logic is controlled using these three variables inside a while(1) game loop.
+The entire game is basically these three values changing inside an infinite loop.
 
-4. Game Loop Structure
+4. How the Main Game Loop Works
 
-The main game loop repeatedly performs these steps:
+The gameplay loop does four things repeatedly:
 
-Input Handling
+Reads player input
 
-Drawing the Scene
+Draws the screen
 
-Collision Detection
+Checks collision
 
-Updating Obstacle Position
+Moves the obstacle and updates variables
 
 4.1 Input Handling
 if (_kbhit()) {
     char ch = getch();
-
-    if (ch == 75 && x > 0)        // LEFT arrow
-        x--;
-
-    if (ch == 77 && x < 2)        // RIGHT arrow
-        x++;
+    if (ch == 75 && x > 0) x--;   // left arrow
+    if (ch == 77 && x < 2) x++;   // right arrow
 }
 
 
-_kbhit() checks if a key has been pressed without stopping the program.
+_kbhit() only checks if a key was pressed (non-blocking).
 
-getch() reads the pressed key.
+getch() reads the key immediately.
 
-Key code 75: left arrow → move player one lane to the left (if not already at lane 0).
+Using ASCII codes:
 
-Key code 77: right arrow → move player one lane to the right (if not already at lane 2).
+75 → left arrow
 
-This ensures the player stays within the valid lane range [0, 2].
+77 → right arrow
 
-4.2 Drawing the Scene
+This keeps the player inside lanes 0–2.
 
-First, the console is cleared and a top border is printed:
+4.2 Drawing Everything on the Screen
+
+First the console is cleared:
 
 system("cls");
-printf("|--- --- ---|\n");
 
 
-Then, 10 rows of the "road" are printed:
+Then a small border is printed, followed by 10 rows representing the path.
 
-for (int i = 0; i < 10; i++) {
-    if (i == step) {
+When i == step, we print the obstacle in its current lane:
 
-        if (obstaclePos == 0)
-            printf("| %c        |\n", 1);
-        else if (obstaclePos == 1)
-            printf("|     %c    |\n", 1);
-        else if (obstaclePos == 2)
-            printf("|        %c |\n", 1);
-
-    } else {
-        printf("|           |\n");
-    }
+if (i == step) {
+    // print obstacle in the correct lane
+}
+else {
+    // print empty row
 }
 
 
-If i == step, the obstacle is drawn in its lane using the %c placeholder with character 1.
+After these 10 rows, the player is drawn on the bottom lane depending on x.
 
-Otherwise, an empty lane row is printed.
-
-Finally, the player is drawn in the bottom row:
-
-if (x == 0)
-    printf("| %c        |\n", 6);
-else if (x == 1)
-    printf("|     %c    |\n", 6);
-else if (x == 2)
-    printf("|        %c |\n", 6);
-
-
-The player is displayed in the lane indicated by x using the %c placeholder with character 6.
-
-In total, the display shows:
+So the screen layout each frame is:
 
 Top border
 
-10 rows of road with (possibly) the falling obstacle
+10 falling rows (one of them may contain the obstacle)
 
-1 bottom row with the player
+Bottom row with the player
 
-4.3 Collision Detection
+4.3 Collision Check
 if (step == 10 && x == obstaclePos) {
-    printf("\nGAME OVER!\n");
+    printf("GAME OVER!");
     break;
 }
 
 
-When step == 10, the obstacle has reached the player's row.
+Once the obstacle reaches row 10 (the player row), if both the player and obstacle are in the same lane → game ends.
 
-If at that moment x == obstaclePos, both are in the same lane → collision.
-
-The game prints "GAME OVER!" and exits the loop.
-
-4.4 Obstacle Movement and Reset
+4.4 Moving the Obstacle
 Sleep(120);
 step++;
 
+
+Each frame:
+
+The game pauses for ~120 ms
+
+The obstacle moves one row downward
+
+After it goes off-screen:
+
 if (step > 10) {
     step = 0;
-    obstaclePos = rand() % 3; // new lane
+    obstaclePos = rand() % 3;
 }
 
 
-Sleep(120) slows the loop to make the game playable.
+This creates an endless cycle of new obstacles.
 
-step++ moves the obstacle one row down.
+5. Quick Summary of the Game Flow
 
-When the obstacle goes beyond the bottom row (step > 10) and no collision occurred:
+Every frame:
 
-step is reset to 0 (top row).
+Check for left/right input
 
-A new random lane is chosen for obstaclePos.
+Clear console
 
-This creates the repeating cycle of new obstacles falling toward the player.
+Draw border, obstacle row, empty rows, and player
 
-5. Flow Summary
+Print score
 
-High-level logic per frame:
+Detect collision
 
-Check if player pressed left/right → update x.
+Move obstacle downward
 
-Clear the screen and redraw:
+Reset obstacle when needed
 
-Border
+6. Modifications I Implemented
 
-Obstacle at its current row (step) and lane (obstaclePos)
+For the assignment, I picked two enhancements:
 
-Player at bottom lane (x)
+✔️ 1. Score System
 
-If obstacle is at the player's row and lane → Game Over.
+I added a score variable that increases every time an obstacle reaches the bottom without hitting the player.
 
-Wait 120 ms.
+The score is displayed on screen during gameplay:
 
-Move obstacle down one row (step++).
-
-If obstacle goes past bottom without collision → reset it at top with a new random lane.
-
-6. Observations and Possible Improvements
-
-The game currently:
-
-Has no scoring system.
-
-Does not increase difficulty over time.
-
-Exits immediately after the first collision.
-
-It is platform-dependent:
-
-Uses conio.h, windows.h, Sleep, and system("cls").
-
-Possible improvements:
-
-Add a score based on how many obstacles were dodged.
-
-Gradually decrease Sleep() duration to make it faster.
-
-Add a restart option instead of exiting on Game Over.
-
-Replace system("cls") with a more efficient rendering method to reduce screen flicker.
-
----
-
-## 7. Implemented Modifications
-
-For Objective 2, the following features were added to the game:
-
-### 7.1 Score System
-
-- A new integer variable `score` was introduced to track how many obstacles the player successfully dodges.
-- Every time an obstacle travels from the top of the screen to the bottom **without colliding** with the player, the score is increased by 1.
-- The current score is displayed on the screen during gameplay:
-
-```c
-int score = 0;
 printf("Score: %d    High Score: %d\n", score, highScore);
 
-This gives the player immediate feedback on their performance and rewards surviving longer.
 
-7.2 High Score Storage Using File Handling
+This makes the game more engaging because you can track how long you’ve survived.
 
-A highScore variable was added to track the best score across multiple runs of the game.
+✔️ 2. High Score Saving (File Handling)
 
-The high score is stored in a simple text file named highscore.txt.
+I introduced a highScore variable that is stored permanently in a file called highscore.txt.
 
-Loading the High Score
-
-At the start of the program, the game tries to read a previously saved high score:
-
-int highScore = 0;
+Reading the high score at the start:
 FILE *f = fopen("highscore.txt", "r");
 if (f != NULL) {
     fscanf(f, "%d", &highScore);
     fclose(f);
 }
 
-
-If the file exists, the value is read and used as the initial highScore.
-
-If the file does not exist, the highScore is initialized to 0.
-
-Updating and Saving the High Score
-
-When the game ends, the final score is compared to the stored high score:
-
+Updating it when the game ends:
 if (score > highScore) {
-    highScore = score;
     f = fopen("highscore.txt", "w");
-    if (f != NULL) {
-        fprintf(f, "%d", highScore);
-        fclose(f);
-    }
+    fprintf(f, "%d", score);
+    fclose(f);
 }
 
 
-If the current score is greater than highScore, it is treated as a new high score.
+This lets the game remember the best score even if the program is closed and reopened.
 
-The new high score is written back into highscore.txt using file handling.
+7. Why These Features Improve the Game
 
-A message is displayed to inform the player that they achieved a new high score.
+Score adds a sense of progression
 
-Displaying Score and High Score
+High score gives long-term motivation
 
-During gameplay, both the current score and the high score are displayed:
-
-printf("Score: %d    High Score: %d\n", score, highScore);
-
-
-This makes the game more engaging by:
-
-Showing immediate progress (score),
-
-Encouraging players to beat their previous best (high score),
-Persisting progress across multiple game sessions using file handling.
+Combining these makes the game feel more complete without making the code too complicated
